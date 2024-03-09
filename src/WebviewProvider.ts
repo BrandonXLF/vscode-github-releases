@@ -1,0 +1,325 @@
+import * as vscode from 'vscode';
+import { basename } from 'path';
+import { RemoteList } from './RemoteList';
+import { Release, Remote } from './Remote';
+import {
+    WebviewState,
+    WebviewStateMessage,
+    PartialWebviewStateMessage,
+} from './types/webview';
+
+export class WebviewProvider implements vscode.WebviewViewProvider {
+    webviewView?: vscode.WebviewView;
+
+    constructor(
+        private readonly ctx: vscode.ExtensionContext,
+        private readonly remotes: RemoteList,
+    ) {}
+
+    private baseRelease?: Release;
+    private state?: WebviewState;
+    private remote?: Remote;
+
+    clear() {
+        this.baseRelease = undefined;
+        this.state = undefined;
+        this.remote = undefined;
+    }
+
+    async show(release?: Release) {
+        this.clear();
+
+        this.baseRelease = release;
+
+        if (release) {
+            this.remote = this.baseRelease?.remote;
+        } else if (this.remotes.list.length === 1) {
+            this.remote = this.remotes.list[0];
+        } else {
+            this.remote = (
+                await vscode.window.showQuickPick(
+                    this.remotes.list.map((remote) => ({
+                        label: remote.name,
+                        remote,
+                    })),
+                )
+            )?.remote;
+        }
+
+        if (!this.remote) {
+            vscode.window.showInformationMessage('Release creation cancelled.');
+            return;
+        }
+
+        if (this.webviewView) {
+            this.sendStartMessage();
+            this.webviewView.show();
+        }
+
+        await vscode.commands.executeCommand(
+            'setContext',
+            'gitHubReleases:createRelease',
+            true,
+        );
+    }
+
+    async hide() {
+        this.clear();
+
+        await vscode.commands.executeCommand(
+            'setContext',
+            'gitHubReleases:createRelease',
+            false,
+        );
+    }
+
+    sendStartMessage() {
+        return this.webviewView!.webview.postMessage({
+            type: 'set-state',
+            tag: this.state?.tag ?? this.baseRelease?.tag ?? '',
+            existingTag: this.state?.existingTag ?? !!this.baseRelease?.tag,
+            target:
+                this.state?.target ??
+                (this.baseRelease
+                    ? ''
+                    : this.remote!.localRepo.state.HEAD?.name) ??
+                '',
+            title: this.state?.title ?? this.baseRelease?.title ?? '',
+            desc: this.state?.desc ?? this.baseRelease?.desc ?? '',
+            draft: this.state?.draft ?? this.baseRelease?.draft ?? false,
+            prerelease:
+                this.state?.prerelease ?? this.baseRelease?.prerelease ?? false,
+            assets:
+                this.state?.assets ??
+                this.baseRelease?.assets.map((asset) => ({
+                    new: false,
+                    ...asset,
+                })) ??
+                [],
+            deletedAssets: this.state?.deletedAssets ?? [],
+            renamedAssets: this.state?.renamedAssets ?? [],
+        } satisfies WebviewStateMessage);
+    }
+
+    async processPublish(data: WebviewState) {
+        const newRelease = await this.remote!.updateOrPublishRelease({
+            id: this.baseRelease?.id,
+            ...data,
+        });
+
+        if (!newRelease) return;
+
+        if (this.baseRelease) {
+            for (let [id, name] of data.deletedAssets) {
+                await this.remote!.tryDeleteReleaseAsset(id, name);
+            }
+
+            for (let [id, [oldName, newName]] of data.renamedAssets) {
+                await this.remote!.tryRenameReleaseAsset(id, oldName, newName);
+            }
+        }
+
+        for (let asset of data.assets) {
+            if (!asset.new) continue;
+
+            await this.remote!.tryUploadReleaseAsset(
+                newRelease.id,
+                asset.name,
+                asset.path,
+            );
+        }
+
+        this.hide();
+
+        vscode.commands.executeCommand('github-releases.refreshReleases');
+    }
+
+    async processMessage(data: any) {
+        switch (data.type) {
+            case 'save-state':
+                this.state = data;
+                break;
+            case 'request-asset': {
+                const res = await vscode.window.showOpenDialog({
+                    canSelectMany: false,
+                });
+                const path = res?.[0]?.fsPath;
+
+                if (!path) return;
+
+                this.webviewView!.webview.postMessage({
+                    type: 'add-asset',
+                    asset: {
+                        new: true,
+                        name: basename(path),
+                        path,
+                    },
+                });
+
+                break;
+            }
+            case 'name-in-use':
+                vscode.window.showErrorMessage(
+                    'A file with that name already exists.',
+                );
+
+                break;
+            case 'start': {
+                this.sendStartMessage();
+                break;
+            }
+            case 'select-tag': {
+                const tags = await this.remote!.getTags();
+                const tag = await new Promise<string>((resolve) => {
+                    const quickPick = vscode.window.createQuickPick();
+                    quickPick.items = tags.map((label) => ({ label }));
+
+                    quickPick.onDidChangeValue(() => {
+                        if (
+                            quickPick.value &&
+                            !tags.includes(quickPick.value)
+                        ) {
+                            quickPick.items = [quickPick.value, ...tags].map(
+                                (label) => ({ label }),
+                            );
+                        } else {
+                            quickPick.items = tags.map((label) => ({
+                                label,
+                            }));
+                        }
+                    });
+
+                    quickPick.onDidAccept(() => {
+                        const selection = quickPick.activeItems[0];
+                        quickPick.hide();
+                        resolve(selection.label);
+                    });
+
+                    quickPick.show();
+                });
+
+                this.webviewView!.webview.postMessage({
+                    type: 'set-state',
+                    tag,
+                    existingTag: tags.includes(tag),
+                } satisfies PartialWebviewStateMessage);
+
+                break;
+            }
+            case 'select-target': {
+                const targets = [
+                    ...(await this.remote!.getBranches()).map((label) => ({
+                        label,
+                    })),
+                    { label: '', kind: -1 },
+                    ...(await this.remote!.getCommitHashes()).map((label) => ({
+                        label,
+                    })),
+                ];
+                const target =
+                    (await vscode.window.showQuickPick(targets))?.label ?? '';
+
+                this.webviewView!.webview.postMessage({
+                    type: 'set-state',
+                    target,
+                } satisfies PartialWebviewStateMessage);
+
+                break;
+            }
+            case 'generate-release-notes': {
+                const notes = await this.remote!.generateReleaseNotes(
+                    data.tag,
+                    data.target,
+                );
+
+                if (!notes) break;
+
+                await this.webviewView!.webview.postMessage({
+                    type: 'set-state',
+                    title: notes.title,
+                    desc: notes.desc,
+                } satisfies PartialWebviewStateMessage);
+
+                break;
+            }
+            case 'publish-release': {
+                this.processPublish(data);
+                break;
+            }
+            case 'cancel':
+                this.hide();
+        }
+    }
+
+    async resolveWebviewView(webviewView: vscode.WebviewView) {
+        this.webviewView = webviewView;
+
+        webviewView.onDidDispose(() => {
+            if (this.webviewView === webviewView) {
+                this.webviewView = undefined;
+            }
+        });
+
+        webviewView.webview.options = {
+            enableScripts: true,
+        };
+
+        webviewView.webview.html = this.getHtml();
+
+        webviewView.webview.onDidReceiveMessage((data) =>
+            this.processMessage(data),
+        );
+    }
+
+    getHtml() {
+        const styleURI = this.webviewView!.webview.asWebviewUri(
+            vscode.Uri.joinPath(this.ctx.extensionUri, 'out', 'webview.css'),
+        );
+        const codiconsUri = this.webviewView!.webview.asWebviewUri(
+            vscode.Uri.joinPath(this.ctx.extensionUri, 'out', 'codicon.css'),
+        );
+        const scriptURI = this.webviewView!.webview.asWebviewUri(
+            vscode.Uri.joinPath(this.ctx.extensionUri, 'out', 'webview.js'),
+        );
+
+        return `
+            <!DOCTYPE html>
+            <html lang="en">
+                <head>
+                    <link rel="stylesheet" type="text/css" href="${styleURI}" />
+                    <link id="codicons" rel="stylesheet" type="text/css" href="${codiconsUri}" />
+                </head>
+                <body>
+                    <div class="button-row">
+                        <button-input id="tag" name="tag" placeholder="Choose a tag..."></button-input>
+                        <button-input id="target" name="target" prefix="Target: " placeholder="HEAD"></button-input>
+                    </div>
+                    <div>
+                        <vscode-text-field id="title" placeholder="Release title"></vscode-text-field>
+                    </div>
+                    <div>
+                        <vscode-text-area id="desc" placeholder="Release description" rows="10"></vscode-text-area>
+                    </div>
+                    <div id="generate-container">
+                        <vscode-button id="generate" appearance="secondary">Generate Notes</vscode-button>
+                    </div>
+                    <asset-list id="asset-list"></asset-list>
+                    <div>
+                        <vscode-button id="add-file">Add File</vscode-button>
+                    </div>
+                    <div>
+                        <vscode-checkbox id="draft">Draft</vscode-checkbox>
+                    </div>
+                    <div>
+                        <vscode-checkbox id="prerelease">Pre-release</vscode-checkbox>
+                    </div>
+                    <div class="button-row">
+                        <vscode-button id="cancel" appearance="secondary">Cancel</vscode-button>
+                        <vscode-button id="publish">Publish</vscode-button>
+                    </div>
+                    <script type="module" src="${scriptURI}"></script>
+                </body>
+            </html>
+        `;
+    }
+}

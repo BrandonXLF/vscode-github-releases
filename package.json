@@ -1,0 +1,190 @@
+{
+    "name": "github-releases",
+    "displayName": "GitHub Releases",
+    "description": "View, create, and edit GitHub releases right from Visual Studio Code",
+    "publisher": "brandonfowler",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/BrandonXLF/vscode-github-releases"
+    },
+    "homepage": "https://github.com/BrandonXLF/vscode-github-releases",
+    "bugs": {
+        "url": "https://github.com/BrandonXLF/vscode-github-releases/issues"
+    },
+    "icon": "media/icon.png",
+    "version": "1.0.0",
+    "engines": {
+        "vscode": "^1.55.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "extensionKind": [
+        "workspace"
+    ],
+    "extensionDependencies": [
+        "vscode.git"
+    ],
+    "activationEvents": [],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "category": "GitHub Releases",
+                "command": "github-releases.createRelease",
+                "title": "Create GitHub Release",
+                "icon": "$(add)"
+            },
+            {
+                "category": "GitHub Releases",
+                "command": "github-releases.refreshReleases",
+                "title": "Refresh GitHub Releases",
+                "icon": "$(refresh)"
+            },
+            {
+                "category": "GitHub Releases",
+                "command": "github-releases.editRelease",
+                "title": "Edit Release",
+                "icon": "$(edit)"
+            },
+            {
+                "category": "GitHub Releases",
+                "command": "github-releases.deleteRelease",
+                "title": "Delete Release",
+                "icon": "$(trash)"
+            },
+            {
+                "category": "GitHub Releases",
+                "command": "github-releases.openRepoReleases",
+                "title": "Open Release Page on GitHub",
+                "icon": "$(link-external)"
+            },
+            {
+                "category": "GitHub Releases",
+                "command": "github-releases.openRelease",
+                "title": "Open Release on GitHub",
+                "icon": "$(link-external)"
+            },
+            {
+                "category": "GitHub Releases",
+                "command": "github-releases.downloadAsset",
+                "title": "Download Asset",
+                "icon": "$(desktop-download)"
+            },
+            {
+                "category": "GitHub Releases",
+                "command": "github-releases.checkoutTag",
+                "title": "Checkout Tag",
+                "icon": "$(git-branch)"
+            }
+        ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "github-releases-view",
+                    "title": "GitHub Releases",
+                    "icon": "media/light/icon.svg"
+                }
+            ]
+        },
+        "views": {
+            "github-releases-view": [
+                {
+                    "id": "github-releases-create-release",
+                    "type": "webview",
+                    "name": "Create / Edit Release",
+                    "contextualTitle": "Create GitHub Release",
+                    "icon": "media/light/icon.svg",
+                    "when": "gitHubReleases:createRelease"
+                },
+                {
+                    "id": "github-releases-release-list",
+                    "type": "tree",
+                    "name": "Releases",
+                    "contextualTitle": "GitHub Releases",
+                    "icon": "media/light/icon.svg"
+                }
+            ]
+        },
+        "menus": {
+            "view/title": [
+                {
+                    "command": "github-releases.createRelease",
+                    "when": "gitHubReleases:hasGitHubRepo && view == github-releases-release-list",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "github-releases.refreshReleases",
+                    "when": "gitHubReleases:hasGitHubRepo && view == github-releases-release-list",
+                    "group": "navigation@2"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "github-releases.editRelease",
+                    "when": "view == github-releases-release-list && viewItem == release",
+                    "group": "inline"
+                },
+                {
+                    "command": "github-releases.deleteRelease",
+                    "when": "view == github-releases-release-list && viewItem == release",
+                    "group": "inline"
+                },
+                {
+                    "command": "github-releases.openRepoReleases",
+                    "when": "view == github-releases-release-list && viewItem == repo",
+                    "group": "inline"
+                },
+                {
+                    "command": "github-releases.openRelease",
+                    "when": "view == github-releases-release-list && viewItem == release",
+                    "group": "inline"
+                },
+                {
+                    "command": "github-releases.downloadAsset",
+                    "when": "view == github-releases-release-list && viewItem == asset",
+                    "group": "inline"
+                },
+                {
+                    "command": "github-releases.checkoutTag",
+                    "when": "view == github-releases-release-list && viewItem == tag",
+                    "group": "inline"
+                }
+            ],
+            "commandPalette": [
+                {
+                    "command": "github-releases.createRelease",
+                    "when": "gitHubReleases:hasGitHubRepo"
+                }
+            ]
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run package",
+        "compile": "node ./esbuild.js",
+        "package": "node ./esbuild.js --production",
+        "lint": "eslint src --ext ts && prettier --write --tab-width 4 --single-quote .",
+        "watch": "node ./esbuild.js --watch"
+    },
+    "devDependencies": {
+        "@types/git-url-parse": "^9.0.3",
+        "@types/node": "14.14.9",
+        "@types/vscode": "1.55.0",
+        "@types/vscode-webview": "1.57.4",
+        "@typescript-eslint/eslint-plugin": "^6.16.0",
+        "@typescript-eslint/parser": "^6.16.0",
+        "esbuild": "^0.16.10",
+        "esbuild-copy-static-files": "^0.1.0",
+        "eslint": "^8.56.0",
+        "prettier": "^3.1.1",
+        "typescript": "^5.3.3"
+    },
+    "dependencies": {
+        "@microsoft/fast-element": "^1.12.0",
+        "@octokit/rest": "^20.0.2",
+        "@vscode/codicons": "^0.0.35",
+        "@vscode/webview-ui-toolkit": "^1.4.0",
+        "git-url-parse": "^14.0.0"
+    }
+}
