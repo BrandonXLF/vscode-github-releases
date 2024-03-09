@@ -35,9 +35,6 @@ const template = html<AssetItemElement>`
                 @focusout=${(x) => (x.editing = false)}
             ></vscode-text-field>
         `,
-    )}
-    ${when(
-        (x) => !x.editing,
         html<AssetItemElement>`
             <span>${(x) => x.name}</span>
             <vscode-button
