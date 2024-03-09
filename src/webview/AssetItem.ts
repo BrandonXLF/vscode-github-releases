@@ -77,8 +77,11 @@ const styles = css`
 export class AssetItemElement extends FASTElement {
     @attr name = '';
     @observable editing = false;
+    @observable nameInput?: TextField;
 
-    nameInput?: TextField;
+    nameInputChanged() {
+        setTimeout(() => this.nameInput?.focus(), 0);
+    }
 }
 
 export function registerAssetItem() {
