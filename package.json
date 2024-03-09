@@ -116,7 +116,7 @@
                 },
                 {
                     "command": "github-releases.refreshReleases",
-                    "when": "gitHubReleases:hasGitHubRepo && view == github-releases-release-list",
+                    "when": "view == github-releases-release-list",
                     "group": "navigation@2"
                 }
             ],
