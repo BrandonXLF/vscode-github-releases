@@ -127,7 +127,15 @@ export class Remote {
         }
     }
 
-    async updateOrPublishRelease(data: any) {
+    async updateOrPublishRelease(data: {
+        id?: number;
+        tag: string;
+        target: string;
+        title: string;
+        desc: string;
+        draft: boolean;
+        prerelease: boolean;
+    }) {
         const endpoint = data.id
             ? this.octokit.repos.updateRelease
             : this.octokit.repos.createRelease;
@@ -136,7 +144,7 @@ export class Remote {
             const res = await endpoint({
                 owner: this.owner,
                 repo: this.name,
-                release_id: data.id,
+                release_id: data.id as number,
                 tag_name: data.tag,
                 target_commitish: data.target || undefined,
                 name: data.title,
