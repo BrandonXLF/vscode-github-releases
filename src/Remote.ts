@@ -86,13 +86,16 @@ export class Remote {
         return res.data.map((item) => item.ref.replace(/^refs\/heads\//, ''));
     }
 
-    async getCommitHashes() {
+    async getCommits() {
         const res = await this.octokit.repos.listCommits({
             owner: this.owner,
             repo: this.name,
         });
 
-        return res.data.map((item) => item.sha);
+        return res.data.map((item) => ({
+            sha: item.sha,
+            message: item.commit.message.split('\n')[0],
+        }));
     }
 
     async checkoutTag(tag: string) {

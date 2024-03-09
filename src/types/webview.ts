@@ -3,24 +3,27 @@ export type Asset = { name: string } & (
     | { new: false; id: number }
 );
 
-type AssetInfo = {
-    assets: Asset[];
-    deletedAssets: [number, string][];
-    renamedAssets: [number, [string, string]][];
-};
-
 export type WebviewState = {
-    tag: string;
-    existingTag: boolean;
-    target: string;
+    tag: {
+        name: string;
+        existing: boolean;
+    };
+    target: {
+        ref: string;
+        display: string;
+    };
     title: string;
     desc: string;
     draft: boolean;
     prerelease: boolean;
-} & AssetInfo;
+    assets: {
+        current: Asset[];
+        deleted: [number, string][];
+        renamed: [number, [string, string]][];
+    };
+};
 
-export type PartialWebviewState = Omit<Partial<WebviewState>, keyof AssetInfo> &
-    (AssetInfo | Record<keyof AssetInfo, undefined> | {});
+export type PartialWebviewState = Partial<WebviewState>;
 
 export type WebviewStateMessage = {
     type: 'set-state';

@@ -19,3 +19,7 @@ body {
     align-items: center;
     gap: 1em;
 }
+
+#target {
+    word-break: break-all;
+}

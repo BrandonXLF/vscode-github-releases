@@ -39,9 +39,12 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
             this.remote = (
                 await vscode.window.showQuickPick(
                     this.remotes.list.map((remote) => ({
-                        label: remote.name,
+                        label: remote.identifier,
                         remote,
                     })),
+                    {
+                        placeHolder: 'Select GitHub repository',
+                    },
                 )
             )?.remote;
         }
@@ -74,52 +77,61 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
     }
 
     sendStartMessage() {
+        const defaultTarget = this.remote!.localRepo.state.HEAD?.name ?? '';
+
         return this.webviewView!.webview.postMessage({
             type: 'set-state',
-            tag: this.state?.tag ?? this.baseRelease?.tag ?? '',
-            existingTag: this.state?.existingTag ?? !!this.baseRelease?.tag,
-            target:
-                this.state?.target ??
-                (this.baseRelease
-                    ? ''
-                    : this.remote!.localRepo.state.HEAD?.name) ??
-                '',
+            tag: {
+                name: this.state?.tag.name ?? this.baseRelease?.tag ?? '',
+                existing: this.state?.tag.existing ?? !!this.baseRelease?.tag,
+            },
+            target: {
+                ref: this.state?.target.ref ?? defaultTarget,
+                display: this.state?.target.display ?? defaultTarget,
+            },
             title: this.state?.title ?? this.baseRelease?.title ?? '',
             desc: this.state?.desc ?? this.baseRelease?.desc ?? '',
             draft: this.state?.draft ?? this.baseRelease?.draft ?? false,
             prerelease:
                 this.state?.prerelease ?? this.baseRelease?.prerelease ?? false,
-            assets:
-                this.state?.assets ??
-                this.baseRelease?.assets.map((asset) => ({
-                    new: false,
-                    ...asset,
-                })) ??
-                [],
-            deletedAssets: this.state?.deletedAssets ?? [],
-            renamedAssets: this.state?.renamedAssets ?? [],
+            assets: {
+                current:
+                    this.state?.assets.current ??
+                    this.baseRelease?.assets.map((asset) => ({
+                        new: false,
+                        ...asset,
+                    })) ??
+                    [],
+                deleted: this.state?.assets.deleted ?? [],
+                renamed: this.state?.assets.renamed ?? [],
+            },
         } satisfies WebviewStateMessage);
     }
 
     async processPublish(data: WebviewState) {
         const newRelease = await this.remote!.updateOrPublishRelease({
             id: this.baseRelease?.id,
-            ...data,
+            tag: data.tag.name,
+            target: data.target.ref,
+            title: data.title,
+            desc: data.desc,
+            draft: data.draft,
+            prerelease: data.prerelease,
         });
 
         if (!newRelease) return;
 
         if (this.baseRelease) {
-            for (let [id, name] of data.deletedAssets) {
+            for (let [id, name] of data.assets.deleted) {
                 await this.remote!.tryDeleteReleaseAsset(id, name);
             }
 
-            for (let [id, [oldName, newName]] of data.renamedAssets) {
+            for (let [id, [oldName, newName]] of data.assets.renamed) {
                 await this.remote!.tryRenameReleaseAsset(id, oldName, newName);
             }
         }
 
-        for (let asset of data.assets) {
+        for (let asset of data.assets.current) {
             if (!asset.new) continue;
 
             await this.remote!.tryUploadReleaseAsset(
@@ -170,9 +182,13 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
             }
             case 'select-tag': {
                 const tags = await this.remote!.getTags();
+
                 const tag = await new Promise<string>((resolve) => {
                     const quickPick = vscode.window.createQuickPick();
+
                     quickPick.items = tags.map((label) => ({ label }));
+                    quickPick.placeholder =
+                        'Select an existing tag or enter a name for a new one';
 
                     quickPick.onDidChangeValue(() => {
                         if (
@@ -200,8 +216,10 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
 
                 this.webviewView!.webview.postMessage({
                     type: 'set-state',
-                    tag,
-                    existingTag: tags.includes(tag),
+                    tag: {
+                        name: tag,
+                        existing: tags.includes(tag),
+                    },
                 } satisfies PartialWebviewStateMessage);
 
                 break;
@@ -209,19 +227,31 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
             case 'select-target': {
                 const targets = [
                     ...(await this.remote!.getBranches()).map((label) => ({
+                        value: label,
                         label,
                     })),
-                    { label: '', kind: -1 },
-                    ...(await this.remote!.getCommitHashes()).map((label) => ({
-                        label,
+                    {
+                        value: '',
+                        label: '',
+                        kind: -1,
+                    },
+                    ...(await this.remote!.getCommits()).map((commit) => ({
+                        value: commit.sha,
+                        label: commit.sha.slice(0, 8),
+                        detail: commit.message,
                     })),
                 ];
-                const target =
-                    (await vscode.window.showQuickPick(targets))?.label ?? '';
+
+                const target = (await vscode.window.showQuickPick(targets, {
+                    placeHolder: 'Select a target for the release tag',
+                })) ?? { value: '', label: '' };
 
                 this.webviewView!.webview.postMessage({
                     type: 'set-state',
-                    target,
+                    target: {
+                        ref: target.value,
+                        display: target.label,
+                    },
                 } satisfies PartialWebviewStateMessage);
 
                 break;
@@ -292,7 +322,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
                 <body>
                     <div class="button-row">
                         <button-input id="tag" name="tag" placeholder="Choose a tag..."></button-input>
-                        <button-input id="target" name="target" prefix="Target: " placeholder="HEAD"></button-input>
+                        <button-input id="target" name="target" prefix="Target: " placeholder="Choose..."></button-input>
                     </div>
                     <div>
                         <vscode-text-field id="title" placeholder="Release title"></vscode-text-field>

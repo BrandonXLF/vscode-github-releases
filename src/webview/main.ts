@@ -64,16 +64,23 @@ function updateGenerateButton() {
 
 function getState() {
     return {
-        tag: tagInput.value,
-        target: targetInput.value,
+        tag: {
+            name: tagInput.value,
+            existing: existingTag,
+        },
+        target: {
+            ref: targetInput.value,
+            display: targetInput.valueLabel,
+        },
         title: titleInput.value,
         desc: descInput.value,
         draft: draftCheck.checked,
         prerelease: prereleaseCheck.checked,
-        assets: assetList.list,
-        deletedAssets: assetList.deleted,
-        renamedAssets: assetList.renamed,
-        existingTag: existingTag,
+        assets: {
+            current: assetList.list,
+            deleted: assetList.deleted,
+            renamed: assetList.renamed,
+        },
     } satisfies WebviewState;
 }
 
@@ -86,11 +93,14 @@ function saveState() {
 
 function setState(state: PartialWebviewState) {
     if (state.tag !== undefined) {
-        tagInput.value = state.tag;
+        tagInput.value = state.tag.name;
+        existingTag = state.tag.existing;
+        targetInput.style.display = existingTag ? 'none' : '';
     }
 
     if (state.target !== undefined) {
-        targetInput.value = state.target;
+        targetInput.value = state.target.ref;
+        targetInput.valueLabel = state.target.display;
     }
 
     if (state.title !== undefined) {
@@ -111,15 +121,10 @@ function setState(state: PartialWebviewState) {
 
     if ('assets' in state && state.assets !== undefined)
         assetList.setState(
-            state.assets,
-            state.deletedAssets,
-            state.renamedAssets,
+            state.assets.current,
+            state.assets.deleted,
+            state.assets.renamed,
         );
-
-    if (state.existingTag !== undefined) {
-        existingTag = state.existingTag;
-        targetInput.style.display = existingTag ? 'none' : '';
-    }
 
     saveState();
     updateGenerateButton();

@@ -14,7 +14,7 @@ const template = html<ButtonInputElement>`
         appearance="secondary"
         @click=${(x) => x.sendRequest()}
     >
-        ${(x) => x.prefix}${(x) => x.value || x.placeholder}
+        ${(x) => x.prefix}${(x) => x.valueLabel || x.value || x.placeholder}
     </vscode-button>
 `;
 
@@ -23,6 +23,7 @@ export class ButtonInputElement extends FASTElement {
     @attr name = '';
     @attr placeholder = '';
     @attr value = '';
+    @attr valueLabel = '';
 
     private vscode?: WebviewApi<unknown>;
     button?: Button;
