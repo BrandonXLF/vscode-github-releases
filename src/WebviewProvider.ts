@@ -224,6 +224,8 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
 
         const target = (await vscode.window.showQuickPick(targets, {
             placeHolder: 'Select a target for the release tag',
+            matchOnDescription: true,
+            matchOnDetail: true,
         })) ?? { value: '', label: '' };
 
         if (!target.value) return;
