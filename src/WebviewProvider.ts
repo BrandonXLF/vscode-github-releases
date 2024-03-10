@@ -260,13 +260,18 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
             }
             case 'select-target': {
                 const targets = [
+                    {
+                        value: '',
+                        label: 'Branches',
+                        kind: -1,
+                    },
                     ...(await this.remote!.getBranches()).map((label) => ({
                         value: label,
                         label,
                     })),
                     {
                         value: '',
-                        label: '',
+                        label: 'Commits',
                         kind: -1,
                     },
                     ...(await this.remote!.getCommits()).map((commit) => ({
