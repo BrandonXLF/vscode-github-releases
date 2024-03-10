@@ -182,11 +182,27 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
             }
             case 'select-tag': {
                 const tags = await this.remote!.getTags();
+                const localTags = await this.remote!.getLocalTags();
 
                 const tag = await new Promise<string>((resolve) => {
                     const quickPick = vscode.window.createQuickPick();
+                    const items = [
+                        {
+                            label: 'Push a local tag...',
+                            showLocal: true,
+                        } as vscode.QuickPickItem,
+                        {
+                            label: 'Remote tags',
+                            kind: -1,
+                        } as vscode.QuickPickItem,
+                        ...tags.map((label) => ({ label })),
+                        {
+                            label: '',
+                            kind: -1,
+                        } as vscode.QuickPickItem,
+                    ];
 
-                    quickPick.items = tags.map((label) => ({ label }));
+                    quickPick.items = items;
                     quickPick.placeholder =
                         'Select an existing tag or enter a name for a new one';
 
@@ -195,19 +211,37 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
                             quickPick.value &&
                             !tags.includes(quickPick.value)
                         ) {
-                            quickPick.items = [quickPick.value, ...tags].map(
-                                (label) => ({ label }),
-                            );
+                            quickPick.items = [
+                                { label: quickPick.value },
+                                ...items,
+                            ];
                         } else {
-                            quickPick.items = tags.map((label) => ({
-                                label,
-                            }));
+                            quickPick.items = items;
                         }
                     });
 
-                    quickPick.onDidAccept(() => {
+                    quickPick.onDidAccept(async () => {
                         const selection = quickPick.activeItems[0];
                         quickPick.hide();
+
+                        if ('showLocal' in selection) {
+                            const localTag = await vscode.window.showQuickPick(
+                                localTags,
+                                { placeHolder: 'Select a tag to push' },
+                            );
+
+                            if (
+                                !localTag ||
+                                !(await this.remote!.pushLocalTag(localTag))
+                            ) {
+                                resolve('');
+                                return;
+                            }
+
+                            resolve(localTag);
+                            return;
+                        }
+
                         resolve(selection.label);
                     });
 

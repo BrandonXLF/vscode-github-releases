@@ -76,6 +76,37 @@ export class Remote {
         return res.data.map((item) => item.name);
     }
 
+    async getLocalTags() {
+        const refs = (await this.localRepo.getRefs({})) ?? [];
+
+        return refs
+            .filter((ref) => ref.type === git.RefType.Tag)
+            .map((ref) => ref.name!);
+    }
+
+    async pushLocalTag(tag: string) {
+        try {
+            await new Promise<void>((resolve, reject) => {
+                exec(
+                    `git push ${this.localName} ${tag} --quiet`,
+                    {
+                        cwd: this.localRepo.rootUri.fsPath,
+                    },
+                    (_err, _stdout, stderr) =>
+                        stderr ? reject(new Error(stderr)) : resolve(),
+                );
+            });
+
+            return true;
+        } catch (e) {
+            vscode.window.showErrorMessage(
+                `Failed to push local tag: ${(e as Error).message}`,
+            );
+
+            return false;
+        }
+    }
+
     async getBranches() {
         const res = await this.octokit.git.listMatchingRefs({
             owner: this.owner,
