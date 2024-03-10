@@ -21,6 +21,7 @@ export type WebviewState = {
         deleted: [number, string][];
         renamed: [number, [string, string]][];
     };
+    makeLatest: boolean;
 };
 
 export type PartialWebviewState = Partial<WebviewState>;

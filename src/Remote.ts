@@ -169,6 +169,7 @@ export class Remote {
         desc: string;
         draft: boolean;
         prerelease: boolean;
+        makeLatest: boolean;
     }) {
         const endpoint = data.id
             ? this.octokit.repos.updateRelease
@@ -185,6 +186,7 @@ export class Remote {
                 body: data.desc,
                 draft: data.draft,
                 prerelease: data.prerelease,
+                make_latest: data.makeLatest ? 'true' : 'false',
             });
 
             return res.data;

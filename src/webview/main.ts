@@ -49,6 +49,9 @@ draftCheck.addEventListener('change', () => saveState());
 const prereleaseCheck = document.getElementById('prerelease') as Checkbox;
 prereleaseCheck.addEventListener('change', () => saveState());
 
+const makeLatestCheck = document.getElementById('makeLatest') as Checkbox;
+prereleaseCheck.addEventListener('change', () => saveState());
+
 const tagInput = document.getElementById('tag') as ButtonInputElement;
 tagInput.init(vscode);
 
@@ -81,6 +84,7 @@ function getState() {
             deleted: assetList.deleted,
             renamed: assetList.renamed,
         },
+        makeLatest: makeLatestCheck.checked,
     } satisfies WebviewState;
 }
 
@@ -117,6 +121,10 @@ function setState(state: PartialWebviewState) {
 
     if (state.prerelease !== undefined) {
         prereleaseCheck.checked = state.prerelease;
+    }
+
+    if (state.makeLatest !== undefined) {
+        makeLatestCheck.checked = state.makeLatest;
     }
 
     if ('assets' in state && state.assets !== undefined)

@@ -105,6 +105,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
                 deleted: this.state?.assets.deleted ?? [],
                 renamed: this.state?.assets.renamed ?? [],
             },
+            makeLatest: this.state?.makeLatest ?? !this.baseRelease,
         } satisfies WebviewStateMessage);
     }
 
@@ -266,6 +267,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
             desc: data.desc,
             draft: data.draft,
             prerelease: data.prerelease,
+            makeLatest: data.makeLatest,
         });
 
         if (!newRelease) return;
@@ -390,11 +392,12 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
                     <div>
                         <vscode-button id="add-file">Add File</vscode-button>
                     </div>
-                    <div>
+                    <div class="button-row">
                         <vscode-checkbox id="draft">Draft</vscode-checkbox>
+                        <vscode-checkbox id="prerelease">Pre-release</vscode-checkbox>
                     </div>
                     <div>
-                        <vscode-checkbox id="prerelease">Pre-release</vscode-checkbox>
+                        <vscode-checkbox id="makeLatest">Make latest</vscode-checkbox>
                     </div>
                     <div class="button-row">
                         <vscode-button id="cancel" appearance="secondary">Cancel</vscode-button>
