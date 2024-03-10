@@ -248,6 +248,8 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
                     quickPick.show();
                 });
 
+                if (!tag) break;
+
                 this.webviewView!.webview.postMessage({
                     type: 'set-state',
                     tag: {
@@ -284,6 +286,8 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
                 const target = (await vscode.window.showQuickPick(targets, {
                     placeHolder: 'Select a target for the release tag',
                 })) ?? { value: '', label: '' };
+
+                if (!target.value) break;
 
                 this.webviewView!.webview.postMessage({
                     type: 'set-state',
