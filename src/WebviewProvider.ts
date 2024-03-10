@@ -108,6 +108,153 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
         } satisfies WebviewStateMessage);
     }
 
+    async getAsset() {
+        const res = await vscode.window.showOpenDialog({
+            canSelectMany: false,
+        });
+        const path = res?.[0]?.fsPath;
+
+        if (!path) return;
+
+        this.webviewView!.webview.postMessage({
+            type: 'add-asset',
+            asset: {
+                new: true,
+                name: basename(path),
+                path,
+            },
+        });
+    }
+
+    async selectTag() {
+        const tags = await this.remote!.getTags();
+        const localTags = await this.remote!.getLocalTags();
+
+        const tag = await new Promise<string>((resolve) => {
+            const quickPick = vscode.window.createQuickPick();
+            const items = [
+                {
+                    label: 'Push a local tag...',
+                    showLocal: true,
+                } as vscode.QuickPickItem,
+                {
+                    label: 'Remote tags',
+                    kind: -1,
+                } as vscode.QuickPickItem,
+                ...tags.map((label) => ({ label })),
+                {
+                    label: '',
+                    kind: -1,
+                } as vscode.QuickPickItem,
+            ];
+
+            quickPick.items = items;
+            quickPick.placeholder =
+                'Select an existing tag or enter a name for a new one';
+
+            quickPick.onDidChangeValue(() => {
+                if (quickPick.value && !tags.includes(quickPick.value)) {
+                    quickPick.items = [{ label: quickPick.value }, ...items];
+                } else {
+                    quickPick.items = items;
+                }
+            });
+
+            quickPick.onDidAccept(async () => {
+                const selection = quickPick.activeItems[0];
+                quickPick.hide();
+
+                if ('showLocal' in selection) {
+                    const localTag = await vscode.window.showQuickPick(
+                        localTags,
+                        { placeHolder: 'Select a tag to push' },
+                    );
+
+                    if (
+                        !localTag ||
+                        !(await this.remote!.pushLocalTag(localTag))
+                    ) {
+                        resolve('');
+                        return;
+                    }
+
+                    resolve(localTag);
+                    return;
+                }
+
+                resolve(selection.label);
+            });
+
+            quickPick.show();
+        });
+
+        if (!tag) return;
+
+        this.webviewView!.webview.postMessage({
+            type: 'set-state',
+            tag: {
+                name: tag,
+                existing: tags.includes(tag),
+            },
+        } satisfies PartialWebviewStateMessage);
+    }
+
+    async selectTarget() {
+        const targets = [
+            {
+                value: '',
+                label: 'Branches',
+                kind: -1,
+            },
+            ...(await this.remote!.getBranches()).map((label) => ({
+                value: label,
+                label,
+            })),
+            {
+                value: '',
+                label: 'Commits',
+                kind: -1,
+            },
+            ...(await this.remote!.getCommits()).map((commit) => ({
+                value: commit.sha,
+                label: commit.sha.slice(0, 8),
+                detail: commit.message,
+            })),
+        ];
+
+        const target = (await vscode.window.showQuickPick(targets, {
+            placeHolder: 'Select a target for the release tag',
+        })) ?? { value: '', label: '' };
+
+        if (!target.value) return;
+
+        this.webviewView!.webview.postMessage({
+            type: 'set-state',
+            target: {
+                ref: target.value,
+                display: target.label,
+            },
+        } satisfies PartialWebviewStateMessage);
+    }
+
+    async generateReleaseNotes({
+        tag,
+        target,
+    }: {
+        tag: string;
+        target: string;
+    }) {
+        const notes = await this.remote!.generateReleaseNotes(tag, target);
+
+        if (!notes) return;
+
+        await this.webviewView!.webview.postMessage({
+            type: 'set-state',
+            title: notes.title,
+            desc: notes.desc,
+        } satisfies PartialWebviewStateMessage);
+    }
+
     async processPublish(data: WebviewState) {
         const newRelease = await this.remote!.updateOrPublishRelease({
             id: this.baseRelease?.id,
@@ -148,172 +295,33 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
 
     async processMessage(data: any) {
         switch (data.type) {
+            case 'start': {
+                this.sendStartMessage();
+                break;
+            }
             case 'save-state':
                 this.state = data;
                 break;
             case 'request-asset': {
-                const res = await vscode.window.showOpenDialog({
-                    canSelectMany: false,
-                });
-                const path = res?.[0]?.fsPath;
-
-                if (!path) return;
-
-                this.webviewView!.webview.postMessage({
-                    type: 'add-asset',
-                    asset: {
-                        new: true,
-                        name: basename(path),
-                        path,
-                    },
-                });
-
+                this.getAsset();
                 break;
             }
             case 'name-in-use':
                 vscode.window.showErrorMessage(
                     'A file with that name already exists.',
                 );
-
                 break;
-            case 'start': {
-                this.sendStartMessage();
-                break;
-            }
             case 'select-tag': {
-                const tags = await this.remote!.getTags();
-                const localTags = await this.remote!.getLocalTags();
-
-                const tag = await new Promise<string>((resolve) => {
-                    const quickPick = vscode.window.createQuickPick();
-                    const items = [
-                        {
-                            label: 'Push a local tag...',
-                            showLocal: true,
-                        } as vscode.QuickPickItem,
-                        {
-                            label: 'Remote tags',
-                            kind: -1,
-                        } as vscode.QuickPickItem,
-                        ...tags.map((label) => ({ label })),
-                        {
-                            label: '',
-                            kind: -1,
-                        } as vscode.QuickPickItem,
-                    ];
-
-                    quickPick.items = items;
-                    quickPick.placeholder =
-                        'Select an existing tag or enter a name for a new one';
-
-                    quickPick.onDidChangeValue(() => {
-                        if (
-                            quickPick.value &&
-                            !tags.includes(quickPick.value)
-                        ) {
-                            quickPick.items = [
-                                { label: quickPick.value },
-                                ...items,
-                            ];
-                        } else {
-                            quickPick.items = items;
-                        }
-                    });
-
-                    quickPick.onDidAccept(async () => {
-                        const selection = quickPick.activeItems[0];
-                        quickPick.hide();
-
-                        if ('showLocal' in selection) {
-                            const localTag = await vscode.window.showQuickPick(
-                                localTags,
-                                { placeHolder: 'Select a tag to push' },
-                            );
-
-                            if (
-                                !localTag ||
-                                !(await this.remote!.pushLocalTag(localTag))
-                            ) {
-                                resolve('');
-                                return;
-                            }
-
-                            resolve(localTag);
-                            return;
-                        }
-
-                        resolve(selection.label);
-                    });
-
-                    quickPick.show();
-                });
-
-                if (!tag) break;
-
-                this.webviewView!.webview.postMessage({
-                    type: 'set-state',
-                    tag: {
-                        name: tag,
-                        existing: tags.includes(tag),
-                    },
-                } satisfies PartialWebviewStateMessage);
-
-                break;
+                this.selectTag();
+                return;
             }
             case 'select-target': {
-                const targets = [
-                    {
-                        value: '',
-                        label: 'Branches',
-                        kind: -1,
-                    },
-                    ...(await this.remote!.getBranches()).map((label) => ({
-                        value: label,
-                        label,
-                    })),
-                    {
-                        value: '',
-                        label: 'Commits',
-                        kind: -1,
-                    },
-                    ...(await this.remote!.getCommits()).map((commit) => ({
-                        value: commit.sha,
-                        label: commit.sha.slice(0, 8),
-                        detail: commit.message,
-                    })),
-                ];
-
-                const target = (await vscode.window.showQuickPick(targets, {
-                    placeHolder: 'Select a target for the release tag',
-                })) ?? { value: '', label: '' };
-
-                if (!target.value) break;
-
-                this.webviewView!.webview.postMessage({
-                    type: 'set-state',
-                    target: {
-                        ref: target.value,
-                        display: target.label,
-                    },
-                } satisfies PartialWebviewStateMessage);
-
-                break;
+                this.selectTarget();
+                return;
             }
             case 'generate-release-notes': {
-                const notes = await this.remote!.generateReleaseNotes(
-                    data.tag,
-                    data.target,
-                );
-
-                if (!notes) break;
-
-                await this.webviewView!.webview.postMessage({
-                    type: 'set-state',
-                    title: notes.title,
-                    desc: notes.desc,
-                } satisfies PartialWebviewStateMessage);
-
-                break;
+                this.generateReleaseNotes(data);
+                return;
             }
             case 'publish-release': {
                 this.processPublish(data);
