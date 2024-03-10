@@ -7,6 +7,7 @@ import {
     TagItem,
 } from './ReleaseProvider';
 import { WebviewProvider } from './WebviewProvider';
+import { RemoteList } from './RemoteList';
 
 export class Commands {
     static readonly defined: [string, (...args: any[]) => any][] = [];
@@ -19,6 +20,7 @@ export class Commands {
 
     constructor(
         private ctx: vscode.ExtensionContext,
+        public remotes: RemoteList,
         public releaseProvider: ReleaseProvider,
         public webviewProvider: WebviewProvider,
     ) {}
@@ -61,11 +63,11 @@ export class Commands {
     }
 
     @Commands.define('github-releases.openRepoReleases')
-    openRepoReleases(remote: RemoteItem) {
+    openRepoReleases(remoteItem?: RemoteItem) {
+        const remote = remoteItem?.remote ?? this.remotes.list[0];
+
         return vscode.env.openExternal(
-            vscode.Uri.parse(
-                `${remote.remote.url.replace(/\.git$/, '')}/releases`,
-            ),
+            vscode.Uri.parse(`${remote.url}/releases`),
         );
     }
 

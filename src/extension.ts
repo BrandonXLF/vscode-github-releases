@@ -30,7 +30,7 @@ export async function activate(ctx: vscode.ExtensionContext) {
     const releaseProvider = new ReleaseProvider(ctx, remotes);
     const webviewProvider = new WebviewProvider(ctx, remotes);
 
-    new Commands(ctx, releaseProvider, webviewProvider).registerAll();
+    new Commands(ctx, remotes, releaseProvider, webviewProvider).registerAll();
 
     ctx.subscriptions.push(
         vscode.window.registerWebviewViewProvider(

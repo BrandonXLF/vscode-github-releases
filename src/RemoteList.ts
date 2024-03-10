@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as git from './types/git';
-import GitUrlParse from 'git-url-parse';
+import gitUrlParse from 'git-url-parse';
 import { Remote } from './Remote';
 import { Octokit } from '@octokit/rest';
 
@@ -36,7 +36,7 @@ export class RemoteList {
         });
 
         return remoteUrls
-            .map(([url, name, repo]) => [GitUrlParse(url), name, repo] as const)
+            .map(([url, name, repo]) => [gitUrlParse(url), name, repo] as const)
             .filter(([url]) => url.source === 'github.com')
             .map(
                 ([url, name, repo]) =>
@@ -46,7 +46,7 @@ export class RemoteList {
                         url.name,
                         repo,
                         name,
-                        url.href,
+                        url.toString('https').replace(/\.git$/, ''),
                     ),
             );
     }
@@ -68,7 +68,7 @@ export class RemoteList {
         this.onDidRemoteListChangeEmitter.fire(newRemotes);
         vscode.commands.executeCommand(
             'setContext',
-            'gitHubReleases:hasGitHubRepo',
+            'gitHubReleases:knownGitHubRepos',
             newRemotes.length,
         );
     }

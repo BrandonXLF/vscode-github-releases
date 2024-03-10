@@ -111,13 +111,18 @@
             "view/title": [
                 {
                     "command": "github-releases.createRelease",
-                    "when": "gitHubReleases:hasGitHubRepo && view == github-releases-release-list",
+                    "when": "gitHubReleases:knownGitHubRepos && view == github-releases-release-list",
                     "group": "navigation@1"
                 },
                 {
                     "command": "github-releases.refreshReleases",
                     "when": "view == github-releases-release-list",
                     "group": "navigation@2"
+                },
+                {
+                    "command": "github-releases.openRepoReleases",
+                    "when": "gitHubReleases:knownGitHubRepos == 1",
+                    "group": "navigation@3"
                 }
             ],
             "view/item/context": [
@@ -155,7 +160,7 @@
             "commandPalette": [
                 {
                     "command": "github-releases.createRelease",
-                    "when": "gitHubReleases:hasGitHubRepo"
+                    "when": "gitHubReleases:knownGitHubRepos"
                 }
             ]
         }
