@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.2.0
+
+-   Allow for selection multiple assets at once
+-   Remove open repo action from the terminal
+
 ## 1.1.0
 
 -   Add ability to push local tags
