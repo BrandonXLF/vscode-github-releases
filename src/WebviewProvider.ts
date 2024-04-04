@@ -110,21 +110,18 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
     }
 
     async getAsset() {
-        const res = await vscode.window.showOpenDialog({
-            canSelectMany: false,
-        });
-        const path = res?.[0]?.fsPath;
+        const res = await vscode.window.showOpenDialog({ canSelectMany: true });
 
-        if (!path) return;
-
-        this.webviewView!.webview.postMessage({
-            type: 'add-asset',
-            asset: {
-                new: true,
-                name: basename(path),
-                path,
-            },
-        });
+        res?.map((uri) =>
+            this.webviewView!.webview.postMessage({
+                type: 'add-asset',
+                asset: {
+                    new: true,
+                    name: basename(uri.fsPath),
+                    path: uri.fsPath,
+                },
+            }),
+        );
     }
 
     async selectTag() {
@@ -390,7 +387,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
                     </div>
                     <asset-list id="asset-list"></asset-list>
                     <div>
-                        <vscode-button id="add-file">Add File</vscode-button>
+                        <vscode-button id="add-file">Add Files</vscode-button>
                     </div>
                     <div class="button-row">
                         <vscode-checkbox id="draft">Draft</vscode-checkbox>
