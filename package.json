@@ -111,7 +111,7 @@
             "view/title": [
                 {
                     "command": "github-releases.createRelease",
-                    "when": "gitHubReleases:knownGitHubRepos && view == github-releases-release-list",
+                    "when": "view == github-releases-release-list && gitHubReleases:knownGitHubRepos",
                     "group": "navigation@1"
                 },
                 {
@@ -121,7 +121,7 @@
                 },
                 {
                     "command": "github-releases.openRepoReleases",
-                    "when": "gitHubReleases:knownGitHubRepos == 1",
+                    "when": "view == github-releases-release-list && gitHubReleases:knownGitHubRepos == 1",
                     "group": "navigation@3"
                 }
             ],
