@@ -25,6 +25,7 @@ registerAssetList();
 registerButtonInput();
 
 const generateContainer = document.getElementById('generate-container')!;
+const publishBtn = document.getElementById('publish')!;
 
 const assetList = document.getElementById('asset-list') as AssetListElement;
 Observable.getNotifier(assetList).subscribe(
@@ -44,7 +45,10 @@ descInput.addEventListener('input', () => {
 });
 
 const draftCheck = document.getElementById('draft') as Checkbox;
-draftCheck.addEventListener('change', () => saveState());
+draftCheck.addEventListener('change', () => {
+    publishBtn.innerText = draftCheck.checked ? 'Save' : 'Publish';
+    saveState();
+});
 
 const prereleaseCheck = document.getElementById('prerelease') as Checkbox;
 prereleaseCheck.addEventListener('change', () => saveState());
@@ -172,7 +176,7 @@ document.getElementById('cancel')?.addEventListener('click', () => {
     });
 });
 
-document.getElementById('publish')?.addEventListener('click', () => {
+publishBtn.addEventListener('click', () => {
     vscode.postMessage({
         type: 'publish-release',
         ...getState(),
