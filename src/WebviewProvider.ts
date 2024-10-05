@@ -390,11 +390,11 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
                         <vscode-button id="add-file">Add Files</vscode-button>
                     </div>
                     <div class="button-row">
-                        <vscode-checkbox id="draft">Draft</vscode-checkbox>
                         <vscode-checkbox id="prerelease">Pre-release</vscode-checkbox>
-                    </div>
-                    <div>
                         <vscode-checkbox id="makeLatest">Make latest</vscode-checkbox>
+                    </div>
+                    <div class="button-row">
+                        <vscode-checkbox id="draft">Draft</vscode-checkbox>
                     </div>
                     <div class="button-row">
                         <vscode-button id="cancel" appearance="secondary">Cancel</vscode-button>
