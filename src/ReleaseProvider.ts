@@ -11,10 +11,19 @@ export class RemoteItem extends vscode.TreeItem {
 
 export class ReleaseItem extends vscode.TreeItem {
     constructor(public readonly release: Release) {
+        let prefix = '';
+
+        if (release.draft) {
+            prefix = '[Draft] ';
+        } else if (release.remote.isLatest(release)) {
+            prefix = '[Latest] ';
+        }
+
         super(
-            (release.draft ? '[Draft] ' : '') + release.title,
+            prefix + release.title,
             vscode.TreeItemCollapsibleState.Collapsed,
         );
+
         this.contextValue = 'release';
     }
 }
@@ -65,7 +74,7 @@ export class ReleaseProvider
 
     constructor(
         ctx: vscode.ExtensionContext,
-        private remotes: RemoteList,
+        private readonly remotes: RemoteList,
     ) {
         ctx.subscriptions.push(
             remotes.onDidRemoteListChange(() =>

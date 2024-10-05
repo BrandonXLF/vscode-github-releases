@@ -27,6 +27,8 @@ export interface Release {
 }
 
 export class Remote {
+    private latestId: number | null = null;
+
     constructor(
         private readonly octokit: Octokit,
         public readonly owner: string,
@@ -40,7 +42,18 @@ export class Remote {
         return `${this.owner}/${this.name}`;
     }
 
+    private async updateLatest() {
+        const res = await this.octokit.repos.getLatestRelease({
+            owner: this.owner,
+            repo: this.name,
+        });
+
+        this.latestId = res.data.id;
+    }
+
     async getReleases() {
+        await this.updateLatest();
+
         const res = await this.octokit.repos.listReleases({
             owner: this.owner,
             repo: this.name,
@@ -65,6 +78,10 @@ export class Remote {
             createDate: item.created_at,
             publishDate: item.published_at,
         }));
+    }
+
+    isLatest(release: Release) {
+        return this.latestId === release.id;
     }
 
     async getTags() {
