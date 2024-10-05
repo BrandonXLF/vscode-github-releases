@@ -11,16 +11,16 @@ export class RemoteItem extends vscode.TreeItem {
 
 export class ReleaseItem extends vscode.TreeItem {
     constructor(public readonly release: Release) {
-        let prefix = '';
+        let suffix = '';
 
         if (release.draft) {
-            prefix = '[Draft] ';
+            suffix = ' [Draft]';
         } else if (release.remote.isLatest(release)) {
-            prefix = '[Latest] ';
+            suffix = ' [Latest]';
         }
 
         super(
-            prefix + release.title,
+            release.title + suffix,
             vscode.TreeItemCollapsibleState.Collapsed,
         );
 
