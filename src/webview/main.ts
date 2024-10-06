@@ -46,7 +46,7 @@ descInput.addEventListener('input', () => {
 
 const draftCheck = document.getElementById('draft') as Checkbox;
 draftCheck.addEventListener('change', () => {
-    publishBtn.innerText = draftCheck.checked ? 'Save' : 'Publish';
+    updatePublishText();
     saveState();
 });
 
@@ -67,6 +67,10 @@ let existingTag = false;
 
 function updateGenerateButton() {
     generateContainer.style.display = descInput.value ? 'none' : '';
+}
+
+function updatePublishText() {
+    publishBtn.innerText = draftCheck.checked ? 'Save' : 'Publish';
 }
 
 function getState() {
@@ -140,6 +144,7 @@ function setState(state: PartialWebviewState) {
 
     saveState();
     updateGenerateButton();
+    updatePublishText();
 }
 
 window.addEventListener('message', (e) => {
