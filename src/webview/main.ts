@@ -54,7 +54,7 @@ const prereleaseCheck = document.getElementById('prerelease') as Checkbox;
 prereleaseCheck.addEventListener('change', () => saveState());
 
 const makeLatestCheck = document.getElementById('makeLatest') as Checkbox;
-prereleaseCheck.addEventListener('change', () => saveState());
+makeLatestCheck.addEventListener('change', () => saveState());
 
 const tagInput = document.getElementById('tag') as ButtonInputElement;
 tagInput.init(vscode);
