@@ -15,6 +15,8 @@ export class ReleaseItem extends vscode.TreeItem {
 
         if (release.draft) {
             suffix = ' [Draft]';
+        } else if (release.prerelease) {
+            suffix = ' [Pre-release]';
         } else if (release.remote.isLatest(release)) {
             suffix = ' [Latest]';
         }
