@@ -22,6 +22,7 @@ export type WebviewState = {
         renamed: [number, [string, string]][];
     };
     makeLatest: boolean;
+    isLatest: boolean;
 };
 
 export type PartialWebviewState = Partial<WebviewState>;

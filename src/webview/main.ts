@@ -40,8 +40,8 @@ titleInput.addEventListener('input', () => saveState());
 
 const descInput = document.getElementById('desc') as TextField;
 descInput.addEventListener('input', () => {
-    saveState();
     updateGenerateButton();
+    saveState();
 });
 
 const draftCheck = document.getElementById('draft') as Checkbox;
@@ -51,7 +51,10 @@ draftCheck.addEventListener('change', () => {
 });
 
 const prereleaseCheck = document.getElementById('prerelease') as Checkbox;
-prereleaseCheck.addEventListener('change', () => saveState());
+prereleaseCheck.addEventListener('change', () => {
+    updateMakeLatest();
+    saveState();
+});
 
 const makeLatestCheck = document.getElementById('makeLatest') as Checkbox;
 makeLatestCheck.addEventListener('change', () => saveState());
@@ -64,6 +67,7 @@ targetInput.init(vscode);
 targetInput.value = 'HEAD';
 
 let existingTag = false;
+let isLatest = false;
 
 function updateGenerateButton() {
     generateContainer.style.display = descInput.value ? 'none' : '';
@@ -71,6 +75,26 @@ function updateGenerateButton() {
 
 function updatePublishText() {
     publishBtn.innerText = draftCheck.checked ? 'Save' : 'Publish';
+}
+
+function updateMakeLatest(userChecked?: boolean) {
+    if (prereleaseCheck.checked) {
+        makeLatestCheck.checked = false;
+        makeLatestCheck.disabled = true;
+        return;
+    }
+
+    if (isLatest) {
+        makeLatestCheck.checked = true;
+        makeLatestCheck.disabled = true;
+        return;
+    }
+
+    makeLatestCheck.disabled = false;
+
+    if (userChecked) {
+        makeLatestCheck.checked = userChecked;
+    }
 }
 
 function getState() {
@@ -93,6 +117,7 @@ function getState() {
             renamed: assetList.renamed,
         },
         makeLatest: makeLatestCheck.checked,
+        isLatest,
     } satisfies WebviewState;
 }
 
@@ -131,8 +156,8 @@ function setState(state: PartialWebviewState) {
         prereleaseCheck.checked = state.prerelease;
     }
 
-    if (state.makeLatest !== undefined) {
-        makeLatestCheck.checked = state.makeLatest;
+    if (state.isLatest !== undefined) {
+        isLatest = state.isLatest;
     }
 
     if ('assets' in state && state.assets !== undefined)
@@ -142,9 +167,10 @@ function setState(state: PartialWebviewState) {
             state.assets.renamed,
         );
 
-    saveState();
     updateGenerateButton();
+    updateMakeLatest(state.makeLatest);
     updatePublishText();
+    saveState();
 }
 
 window.addEventListener('message', (e) => {

@@ -105,7 +105,10 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
                 deleted: this.state?.assets.deleted ?? [],
                 renamed: this.state?.assets.renamed ?? [],
             },
-            makeLatest: this.state?.makeLatest ?? this.baseRelease?.draft ?? true,
+            makeLatest:
+                this.state?.makeLatest ?? this.baseRelease?.draft ?? true,
+            isLatest:
+                this.baseRelease?.remote.isLatest(this.baseRelease) ?? false,
         } satisfies WebviewStateMessage);
     }
 
