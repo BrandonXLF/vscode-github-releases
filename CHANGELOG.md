@@ -1,9 +1,14 @@
 # Change Log
 
+## 1.3.0
+-	Mark the latest commit with "[Latest]"
+-	Show a "Save" button for drafts
+-	Force the state of "Make latest" to reflect GitHub's behaviour
+
 ## 1.2.0
 
 -   Allow for selection multiple assets at once
--   Remove open repo action from the terminal
+-   Remove the open repo action from the terminal
 
 ## 1.1.0
 
