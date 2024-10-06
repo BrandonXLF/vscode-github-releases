@@ -129,7 +129,6 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
 
     async selectTag() {
         const tags = await this.remote!.getTags();
-        const localTags = await this.remote!.getLocalTags();
 
         const tag = await new Promise<string>((resolve) => {
             const quickPick = vscode.window.createQuickPick();
@@ -167,7 +166,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
 
                 if ('showLocal' in selection) {
                     const localTag = await vscode.window.showQuickPick(
-                        localTags,
+                        await this.remote!.getLocalTags(),
                         { placeHolder: 'Select a tag to push' },
                     );
 
