@@ -72,7 +72,8 @@ export class ReleaseProvider
 {
     private readonly onDidChangeTreeDataEmitter =
         new vscode.EventEmitter<vscode.TreeItem | null>();
-    readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
+    private readonly pages = new Map<string, number>();
+    public readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
     constructor(
         ctx: vscode.ExtensionContext,
@@ -105,11 +106,13 @@ export class ReleaseProvider
         }
 
         if (element instanceof RemoteItem) {
+            const page = this.pages.get(element.remote.identifier) ?? 1;
+
             let releases: Release[] = [];
             let details: string | undefined;
 
             try {
-                releases = await element.remote.getReleases();
+                releases = await element.remote.getReleases(page);
             } catch (error) {
                 details = (error as any).toString();
             }
@@ -120,7 +123,41 @@ export class ReleaseProvider
                 return [msg];
             }
 
-            return releases.map((release) => new ReleaseItem(release));
+            const children: vscode.TreeItem[] = releases.map(
+                (release) => new ReleaseItem(release),
+            );
+
+            if (page > 1) {
+                const back = new MessageItem(
+                    `Previous Page`,
+                    new vscode.ThemeIcon('arrow-left'),
+                );
+
+                back.command = {
+                    command: 'github-releases.setPage',
+                    title: 'Previous Page',
+                    arguments: [element.remote.identifier, page - 1],
+                };
+
+                children.push(back);
+            }
+
+            if (releases.length >= Remote.ReleasesPerPage) {
+                const more = new MessageItem(
+                    `Next Page`,
+                    new vscode.ThemeIcon('arrow-right'),
+                );
+
+                more.command = {
+                    command: 'github-releases.setPage',
+                    title: 'Next Page',
+                    arguments: [element.remote.identifier, page + 1],
+                };
+
+                children.push(more);
+            }
+
+            return children;
         }
 
         if (element instanceof ReleaseItem) {
@@ -169,6 +206,10 @@ export class ReleaseProvider
         }
 
         return [];
+    }
+
+    setPage(repo: string, page: number): void {
+        this.pages.set(repo, page);
     }
 
     refresh() {

@@ -44,6 +44,11 @@
             },
             {
                 "category": "GitHub Releases",
+                "command": "github-releases.setPage",
+                "title": "Set GitHub Releases Page"
+            },
+            {
+                "category": "GitHub Releases",
                 "command": "github-releases.editRelease",
                 "title": "Edit Release",
                 "icon": "$(edit)"
@@ -161,6 +166,10 @@
                 {
                     "command": "github-releases.createRelease",
                     "when": "gitHubReleases:knownGitHubRepos"
+                },
+                {
+                    "command": "github-releases.setPage",
+                    "when": "false"
                 }
             ]
         }

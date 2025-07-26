@@ -27,6 +27,8 @@ export interface Release {
 }
 
 export class Remote {
+    public static readonly ReleasesPerPage = 40;
+
     private latestId: number | null = null;
 
     constructor(
@@ -51,17 +53,15 @@ export class Remote {
         this.latestId = res.data.id;
     }
 
-    async getReleases() {
+    async getReleases(page = 1) {
         await this.updateLatest();
-
-        console.log(this.owner, this.name);
 
         const res = await this.octokit.repos.listReleases({
             owner: this.owner,
             repo: this.name,
+            per_page: Remote.ReleasesPerPage,
+            page,
         });
-
-        console.log(res.data);
 
         return res.data.map<Release>((item) => ({
             id: item.id,

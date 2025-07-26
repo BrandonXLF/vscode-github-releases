@@ -19,7 +19,7 @@ export class Commands {
     }
 
     constructor(
-        private ctx: vscode.ExtensionContext,
+        private readonly ctx: vscode.ExtensionContext,
         public remotes: RemoteList,
         public releaseProvider: ReleaseProvider,
         public webviewProvider: WebviewProvider,
@@ -40,6 +40,12 @@ export class Commands {
 
     @Commands.define('github-releases.refreshReleases')
     refreshReleases() {
+        this.releaseProvider.refresh();
+    }
+
+    @Commands.define('github-releases.setPage')
+    setPage(repo: string, page: number) {
+        this.releaseProvider.setPage(repo, page);
         this.releaseProvider.refresh();
     }
 
