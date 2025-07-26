@@ -54,10 +54,14 @@ export class Remote {
     async getReleases() {
         await this.updateLatest();
 
+        console.log(this.owner, this.name);
+
         const res = await this.octokit.repos.listReleases({
             owner: this.owner,
             repo: this.name,
         });
+
+        console.log(res.data);
 
         return res.data.map<Release>((item) => ({
             id: item.id,

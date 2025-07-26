@@ -105,10 +105,19 @@ export class ReleaseProvider
         }
 
         if (element instanceof RemoteItem) {
-            const releases = await element.remote.getReleases();
+            let releases: Release[] = [];
+            let details: string | undefined;
+
+            try {
+                releases = await element.remote.getReleases();
+            } catch (error) {
+                details = (error as any).toString();
+            }
 
             if (!releases.length) {
-                return [new MessageItem('No releases found')];
+                const msg = new MessageItem('No releases found');
+                msg.description = details;
+                return [msg];
             }
 
             return releases.map((release) => new ReleaseItem(release));
