@@ -3,6 +3,8 @@
 ## 1.4.0
 
 - Mark pre-releases with "[Pre-release]"
+- Continue looking at other repos when a repo has no releases
+- Add pagination support
 
 ## 1.3.1
 
