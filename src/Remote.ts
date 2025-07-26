@@ -100,7 +100,7 @@ export class Remote {
     async getLocalTags() {
         const refs = (await this.localRepo.getRefs({})) ?? [];
         const tags = refs.filter((ref) => ref.type === git.RefType.Tag);
-        
+
         tags.reverse();
         return tags.map((ref) => ref.name!);
     }
