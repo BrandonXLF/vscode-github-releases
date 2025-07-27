@@ -5,6 +5,7 @@
 - Mark pre-releases with "[Pre-release]"
 - Continue looking at other repos when a repo has no releases
 - Add pagination support
+- Remove unusable commands from command palette
 
 ## 1.3.1
 

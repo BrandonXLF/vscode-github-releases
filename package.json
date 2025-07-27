@@ -168,7 +168,35 @@
                     "when": "gitHubReleases:knownGitHubRepos"
                 },
                 {
+                    "command": "github-releases.refreshReleases",
+                    "when": "true"
+                },
+                {
                     "command": "github-releases.setPage",
+                    "when": "false"
+                },
+                {
+                    "command": "github-releases.editRelease",
+                    "when": "false"
+                },
+                {
+                    "command": "github-releases.deleteRelease",
+                    "when": "false"
+                },
+                {
+                    "command": "github-releases.openRepoReleases",
+                    "when": "gitHubReleases:knownGitHubRepos"
+                },
+                {
+                    "command": "github-releases.openRelease",
+                    "when": "false"
+                },
+                {
+                    "command": "github-releases.downloadAsset",
+                    "when": "false"
+                },
+                {
+                    "command": "github-releases.checkoutTag",
                     "when": "false"
                 }
             ]
