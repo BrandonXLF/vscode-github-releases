@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { RemoteList } from './RemoteList';
-import { Release, ReleaseAsset, Remote } from './Remote';
+import { PaginationMap, Release, ReleaseAsset, Remote } from './Remote';
 
 export class RemoteItem extends vscode.TreeItem {
     constructor(public remote: Remote) {
@@ -70,6 +70,13 @@ export class MessageItem extends vscode.TreeItem {
 export class ReleaseProvider
     implements vscode.TreeDataProvider<vscode.TreeItem>
 {
+    private static readonly paginationTypes = {
+        first: ['arrow-left', 'First Page'] as const,
+        prev: ['arrow-left', 'Previous Page'] as const,
+        next: ['arrow-right', 'Next Page'] as const,
+        last: ['arrow-right', 'Last Page'] as const,
+    };
+
     private readonly onDidChangeTreeDataEmitter =
         new vscode.EventEmitter<vscode.TreeItem | null>();
     private readonly pages = new Map<string, number>();
@@ -109,52 +116,39 @@ export class ReleaseProvider
             const page = this.pages.get(element.remote.identifier) ?? 1;
 
             let releases: Release[] = [];
+            let pagination: PaginationMap = new Map();
             let details: string | undefined;
 
             try {
-                releases = await element.remote.getReleases(page);
+                ({ releases, pagination } =
+                    await element.remote.getReleases(page));
             } catch (error) {
                 details = (error as any).toString();
             }
 
+            let children: vscode.TreeItem[];
+
             if (!releases.length) {
                 const msg = new MessageItem('No releases found');
                 msg.description = details;
-                return [msg];
+                children = [msg];
+            } else {
+                children = releases.map((release) => new ReleaseItem(release));
             }
 
-            const children: vscode.TreeItem[] = releases.map(
-                (release) => new ReleaseItem(release),
-            );
+            for (const [type, page] of pagination) {
+                if (page === undefined) continue;
 
-            if (page > 1) {
-                const back = new MessageItem(
-                    `Previous Page`,
-                    new vscode.ThemeIcon('arrow-left'),
-                );
+                const [icon, title] = ReleaseProvider.paginationTypes[type];
+                const item = new MessageItem(title, new vscode.ThemeIcon(icon));
 
-                back.command = {
+                item.command = {
                     command: 'github-releases.setPage',
-                    title: 'Previous Page',
-                    arguments: [element.remote.identifier, page - 1],
+                    title,
+                    arguments: [element.remote.identifier, page],
                 };
 
-                children.push(back);
-            }
-
-            if (releases.length >= Remote.ReleasesPerPage) {
-                const more = new MessageItem(
-                    `Next Page`,
-                    new vscode.ThemeIcon('arrow-right'),
-                );
-
-                more.command = {
-                    command: 'github-releases.setPage',
-                    title: 'Next Page',
-                    arguments: [element.remote.identifier, page + 1],
-                };
-
-                children.push(more);
+                children.push(item);
             }
 
             return children;

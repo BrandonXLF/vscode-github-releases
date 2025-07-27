@@ -3,6 +3,7 @@ import * as git from './types/git';
 import { Octokit } from '@octokit/rest';
 import { exec } from 'child_process';
 import fs from 'fs/promises';
+import parseLinkHeader from 'parse-link-header';
 
 export interface ReleaseAsset {
     id: number;
@@ -24,6 +25,18 @@ export interface Release {
     authorIcon: string;
     createDate: string;
     publishDate: string | null;
+}
+
+export type PaginationMap = Map<
+    'first' | 'prev' | 'next' | 'last',
+    number | undefined
+>;
+
+function parsePaginationPage(
+    links: parseLinkHeader.Links | null,
+    type: string,
+): number | undefined {
+    return links?.[type]?.page ? +links[type].page : undefined;
 }
 
 export class Remote {
@@ -63,7 +76,7 @@ export class Remote {
             page,
         });
 
-        return res.data.map<Release>((item) => ({
+        const releases = res.data.map<Release>((item) => ({
             id: item.id,
             tag: item.tag_name,
             title: item.name ?? '',
@@ -82,6 +95,18 @@ export class Remote {
             createDate: item.created_at,
             publishDate: item.published_at,
         }));
+
+        const links = parseLinkHeader(res.headers.link);
+
+        return {
+            releases,
+            pagination: new Map([
+                ['first', parsePaginationPage(links, 'first')],
+                ['prev', parsePaginationPage(links, 'prev')],
+                ['next', parsePaginationPage(links, 'next')],
+                ['last', parsePaginationPage(links, 'last')],
+            ]) satisfies PaginationMap,
+        };
     }
 
     isLatest(release: Release) {
