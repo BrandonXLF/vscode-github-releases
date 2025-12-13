@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.4.1
+
+- Also refresh the remote list when the refresh icon is pressed
+- Continue to show other releases when no latest release is found
+
 ## 1.4.0
 
 - Mark pre-releases with "[Pre-release]"
@@ -13,7 +18,7 @@
 
 ## 1.3.0
 
-- Mark the latest commit with "[Latest]"
+- Mark the latest release with "[Latest]"
 - Show a "Save" button for drafts
 - Force the state of "Make latest" to reflect GitHub's behaviour
 
