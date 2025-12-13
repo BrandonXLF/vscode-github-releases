@@ -207,6 +207,8 @@ export class ReleaseProvider
     }
 
     refresh() {
-        this.onDidChangeTreeDataEmitter.fire(null);
+        if (!this.remotes.refresh()) {
+            this.onDidChangeTreeDataEmitter.fire(null);
+        }
     }
 }

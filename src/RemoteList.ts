@@ -17,9 +17,8 @@ export class RemoteList {
         ctx: vscode.ExtensionContext,
         private git: git.API,
     ) {
-        ctx.subscriptions.push(git.onDidChangeState(() => this.updateKnown()));
-
-        this.updateKnown();
+        ctx.subscriptions.push(git.onDidChangeState(() => this.refresh()));
+        this.refresh();
     }
 
     private getRemotes() {
@@ -51,7 +50,7 @@ export class RemoteList {
             );
     }
 
-    private updateKnown() {
+    refresh(): boolean {
         const newRemotes = this.getRemotes();
 
         if (
@@ -61,7 +60,7 @@ export class RemoteList {
                     newRemote.identifier === this.knownRemotes[i].identifier,
             )
         )
-            return;
+            return false;
 
         this.knownRemotes = newRemotes;
 
@@ -71,6 +70,8 @@ export class RemoteList {
             'gitHubReleases:knownGitHubRepos',
             newRemotes.length,
         );
+
+        return true;
     }
 
     get list() {
