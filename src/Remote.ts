@@ -58,12 +58,21 @@ export class Remote {
     }
 
     private async updateLatest() {
-        const res = await this.octokit.repos.getLatestRelease({
-            owner: this.owner,
-            repo: this.name,
-        });
+        try {
+            const res = await this.octokit.repos.getLatestRelease({
+                owner: this.owner,
+                repo: this.name,
+            });
 
-        this.latestId = res.data.id;
+            this.latestId = res.data.id;
+        } catch (e) {
+            console.error(
+                `Failed to get latest release for ${this.identifier}:`,
+                e,
+            );
+
+            this.latestId = null;
+        }
     }
 
     async getReleases(page = 1) {
